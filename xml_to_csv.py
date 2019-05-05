@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 
 def xml_to_csv(path):
     xml_list = []
-    for xml_file in glob.glob(path + '/*.xml'):
+    for xml_file in glob.glob(path + '/*.xml'):#遍历每一个xml文件
         tree = ET.parse(xml_file)
         root = tree.getroot()
         for member in root.findall('object'):
@@ -26,9 +26,9 @@ def xml_to_csv(path):
 
 
 def main():
-    image_path = os.path.join(os.getcwd(), 'annotations')
+    image_path = os.path.join(os.getcwd(), 'annotations')#xml文件路径
     xml_df = xml_to_csv(image_path)
-    xml_df.to_csv('raccoon_labels.csv', index=None)
+    xml_df.to_csv('raccoon_labels.csv', index=None)#保存为.csv文件，保存路径：当前目录下
     print('Successfully converted xml to csv.')
 
 

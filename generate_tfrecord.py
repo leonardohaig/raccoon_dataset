@@ -2,10 +2,13 @@
 Usage:
   # From tensorflow/models/
   # Create train data:
-  python generate_tfrecord.py --csv_input=data/train_labels.csv  --output_path=train.record
+  python3 generate_tfrecord.py --csv_input=data/train_labels.csv  --output_path=train.record \
+  --image_dir=images/ --label_map_path=training/object-detection.pbtxt
 
   # Create test data:
-  python generate_tfrecord.py --csv_input=data/test_labels.csv  --output_path=test.record
+  python3 generate_tfrecord.py --csv_input=data/test_labels.csv  --output_path=test.record \
+  --image_dir=images/ --label_map_path=training/object-detection.pbtxt
+
 """
 from __future__ import division
 from __future__ import print_function
@@ -18,12 +21,20 @@ import tensorflow as tf
 
 from PIL import Image
 from object_detection.utils import dataset_util
+from object_detection.utils import label_map_util
 from collections import namedtuple, OrderedDict
 
 flags = tf.app.flags
-flags.DEFINE_string('csv_input', '', 'Path to the CSV input')
-flags.DEFINE_string('output_path', '', 'Path to output TFRecord')
-flags.DEFINE_string('image_dir', '', 'Path to images')
+
+# flags.DEFINE_string('csv_input', '', 'Path to the CSV input')
+# flags.DEFINE_string('output_path', '', 'Path to output TFRecord')
+# flags.DEFINE_string('image_dir', '', 'Path to images')
+# flags.DEFINE_string('label_map_path', '', 'Path to label map proto')
+flags.DEFINE_string('csv_input', 'data/train_labels.csv', 'Path to the CSV input')
+flags.DEFINE_string('output_path', 'train1.record', 'Path to output TFRecord')
+flags.DEFINE_string('image_dir', 'images/', 'Path to images')
+flags.DEFINE_string('label_map_path', 'training/object-detection.pbtxt', 'Path to label map proto')
+
 FLAGS = flags.FLAGS
 
 
@@ -41,7 +52,7 @@ def split(df, group):
     return [data(filename, gb.get_group(x)) for filename, x in zip(gb.groups.keys(), gb.groups)]
 
 
-def create_tf_example(group, path):
+def create_tf_example(group, label_map_dict, path):
     with tf.gfile.GFile(os.path.join(path, '{}'.format(group.filename)), 'rb') as fid:
         encoded_jpg = fid.read()
     encoded_jpg_io = io.BytesIO(encoded_jpg)
@@ -63,7 +74,8 @@ def create_tf_example(group, path):
         ymins.append(row['ymin'] / height)
         ymaxs.append(row['ymax'] / height)
         classes_text.append(row['class'].encode('utf8'))
-        classes.append(class_text_to_int(row['class']))
+        #classes.append(class_text_to_int(row['class']))
+        classes.append(label_map_dict[row['class']])
 
     tf_example = tf.train.Example(features=tf.train.Features(feature={
         'image/height': dataset_util.int64_feature(height),
@@ -84,11 +96,12 @@ def create_tf_example(group, path):
 
 def main(_):
     writer = tf.python_io.TFRecordWriter(FLAGS.output_path)
+    label_map_dict = label_map_util.get_label_map_dict(FLAGS.label_map_path)
     path = os.path.join(FLAGS.image_dir)
     examples = pd.read_csv(FLAGS.csv_input)
     grouped = split(examples, 'filename')
     for group in grouped:
-        tf_example = create_tf_example(group, path)
+        tf_example = create_tf_example(group, label_map_dict, path)
         writer.write(tf_example.SerializeToString())
 
     writer.close()
