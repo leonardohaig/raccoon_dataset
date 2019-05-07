@@ -9,6 +9,10 @@ Usage:
   python3 generate_tfrecord.py --csv_input=data/test_labels.csv  --output_path=test.record \
   --image_dir=images/ --label_map_path=training/object-detection.pbtxt
 
+  #模型导出
+  python3 object_detection/export_inference_graph.py --input_type=image_tensor --pipeline_config_path=training/ssdlite_mobilenet_v2_coco.config --trained_checkpoint_prefix=training/model.ckpt-200000 --output_directory=fish_inference_graph
+
+
 """
 from __future__ import division
 from __future__ import print_function
